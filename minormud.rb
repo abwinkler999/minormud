@@ -1,11 +1,15 @@
 require 'socket'
-@all_threads = []
-s = TCPServer.new(3939)
-puts "*** STARTING UP ***"
-while (conn = s.accept)
-	Thread.new(conn) do |c|
-		@all_threads << c
+
+class Mud
+  @all_connqqqqections = []
+  def startup
+    server = TCPServer.new(3939)
+    puts "*** STARTING UP ***"
+    while (conn = server.accept)
+	    Thread.new(conn) do |c|
+		puts "New connection detected."
 		c.print "What is your name? "
+		all_connections << c
 		thing = c.gets.chomp
 		c.puts "Welcome, #{thing}!"
 		loop do
@@ -17,7 +21,12 @@ while (conn = s.accept)
 				c.puts "Shutting down NOW!"
 				Thread.main.exit
 			end
-			@all_threads.each { |x| x.puts line }
+			all_connections.each { |x| x.puts line }
 		end
-	end
+	    end
+    end
+  end
 end
+
+minormud = Mud.new
+minormud.startup
