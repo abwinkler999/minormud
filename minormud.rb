@@ -9,6 +9,8 @@ class Mud
   def initialize
     @all_sockets = Array.new
     @color = Term::ANSIColor
+    @system = User.new
+    @system.name = "System"
   end
 
   def send(message, recipient)
@@ -16,8 +18,9 @@ class Mud
   	recipient.puts communique
   end
 
-  def broadcast(message, originator)
-   message = "#{originator}: " + message
+  def broadcast(message, originator = nil)
+   originator ||= @system
+   message = "#{originator.name}: " + message
    @all_sockets.each { |x| send(message, x)}
    puts "wrote #{message}"
   end
@@ -38,14 +41,18 @@ class Mud
 			loop do
 				line = this_guy.socket.readline.chomp!
 				if line.chomp == "logout"
-					broadcast("Logging out.", this_guy.socket)
+					this_guy.socket.puts "Logging out."
+					broadcast("Logging out.", this_guy)
 					@all_sockets.delete this_guy.socket
+					broadcast("#{this_guy.name} logged out.")
 					this_guy.socket.close
 				elsif line.chomp == "shutdown"
-					broadcast("Shutting down NOW!", this_guy.socket)
+					broadcast("Shutting down NOW!", this_guy)
 					Thread.main.exit
+				else
+					broadcast(line, this_guy)
 				end
-				broadcast(line, this_guy.socket)
+
 			end
 	    end
     end
