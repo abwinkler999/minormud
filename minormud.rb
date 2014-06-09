@@ -1,7 +1,14 @@
 require 'socket'
 
 class Mud
-  @all_connqqqqections = []
+  def initialize
+    @all_threads = Array.new
+  end
+
+  def broadcast(message)
+    
+  end
+
   def startup
     server = TCPServer.new(3939)
     puts "*** STARTING UP ***"
@@ -9,9 +16,9 @@ class Mud
 	    Thread.new(conn) do |c|
 		puts "New connection detected."
 		c.print "What is your name? "
-		all_connections << c
-		thing = c.gets.chomp
+		thing = c.gets.chomp!
 		c.puts "Welcome, #{thing}!"
+		@all_threads << c
 		loop do
 			line = c.readline.chomp!
 			if line.chomp == "logout"
@@ -21,7 +28,7 @@ class Mud
 				c.puts "Shutting down NOW!"
 				Thread.main.exit
 			end
-			all_connections.each { |x| x.puts line }
+			@all_threads.each { |x| x.puts line }
 		end
 	    end
     end
