@@ -15,14 +15,13 @@ class Mud
 
   def send(message, recipient)
   	communique = @color.bold, @color.green, message, @color.clear
-  	recipient.puts communique
+  	recipient.puts communique.join
   end
 
   def broadcast(message, originator = nil)
    originator ||= @system
-   message = "#{originator.name}: " + message
+   message = "#{originator.name}: #{message}"
    @all_sockets.each { |x| send(message, x)}
-   puts "wrote #{message}"
   end
 
   def startup
@@ -31,26 +30,27 @@ class Mud
     while (conn = server.accept)
 	    Thread.new(conn) do |c|
 			puts "New connection detected."
-			c.print "What is your name? "
-			thing = c.gets.chomp!
 			this_guy = User.new
-			this_guy.name = thing
+			c.print "What is your name? "
+			this_guy.name = c.gets.chomp!
 			this_guy.socket = c
 			this_guy.socket.puts "Welcome, #{this_guy.name}!"
+			this_guy.socket.print "> "
 			@all_sockets << this_guy.socket
 			loop do
 				line = this_guy.socket.readline.chomp!
+				puts "#{this_guy.name}: #{line}"
 				if line.chomp == "logout"
 					this_guy.socket.puts "Logging out."
-					broadcast("Logging out.", this_guy)
 					@all_sockets.delete this_guy.socket
 					broadcast("#{this_guy.name} logged out.")
 					this_guy.socket.close
 				elsif line.chomp == "shutdown"
-					broadcast("Shutting down NOW!", this_guy)
+					broadcast("Shutting down NOW!")
 					Thread.main.exit
 				else
 					broadcast(line, this_guy)
+					this_guy.socket.print "> "
 				end
 
 			end
