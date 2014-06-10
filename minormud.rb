@@ -1,8 +1,17 @@
 require 'socket'
 require 'term/ansicolor'
+require 'pry'
+
+class Connection
+	attr_accessor :user, :socket
+	def create_user(name)
+		@user = User.new
+		@user.name = name
+	end
+end
 
 class User
-	attr_accessor :name, :socket
+	attr_accessor :name
 end
 
 class Mud
@@ -19,9 +28,18 @@ class Mud
   end
 
   def broadcast(message, originator = nil)
-   originator ||= @system
-   message = "#{originator.name}: #{message}"
-   @all_sockets.each { |x| send(message, x)}
+	originator ||= @system
+	message = "#{originator.user.name}: #{message}"
+	@all_sockets.each { |x| send(message, x)}
+  end
+
+  def sys_message(message)
+	message = "#{@system.name}: #{message}"
+	@all_sockets.each { |x| send(message, x)}
+  end
+
+  def bust_a_prompt(recipient)
+  	recipient.socket.print "> "
   end
 
   def startup
@@ -30,27 +48,34 @@ class Mud
     while (conn = server.accept)
 	    Thread.new(conn) do |c|
 			puts "New connection detected."
-			this_guy = User.new
+			this_connection = Connection.new
 			c.print "What is your name? "
-			this_guy.name = c.gets.chomp!
-			this_guy.socket = c
-			this_guy.socket.puts "Welcome, #{this_guy.name}!"
-			this_guy.socket.print "> "
-			@all_sockets << this_guy.socket
+			foo = c.gets.chomp!
+			this_connection.create_user(foo)
+			#this_connection.user.name = c.gets.chomp!
+			this_connection.socket = c
+			this_connection.socket.puts "Welcome, #{this_connection.user.name}!"
+			bust_a_prompt(this_connection)
+			@all_sockets << this_connection.socket
 			loop do
-				line = this_guy.socket.readline.chomp!
-				puts "#{this_guy.name}: #{line}"
+				line = this_connection.socket.readline.chomp!
+				if line.length == 0
+					this_connection.socket.puts "Pardon?"
+					bust_a_prompt(this_connection)
+					next
+				end
+				puts "#{this_connection.user.name}: #{line}"
 				if line.chomp == "logout"
-					this_guy.socket.puts "Logging out."
-					@all_sockets.delete this_guy.socket
-					broadcast("#{this_guy.name} logged out.")
-					this_guy.socket.close
+					this_connection.socket.puts "Logging out."
+					@all_sockets.delete this_connection.socket
+					sys_message("#{this_connection.user.name} logged out.")
+					this_connection.socket.close
 				elsif line.chomp == "shutdown"
-					broadcast("Shutting down NOW!")
+					sys_message("Shutting down NOW!")
 					Thread.main.exit
 				else
-					broadcast(line, this_guy)
-					this_guy.socket.print "> "
+					broadcast(line, this_connection)
+					bust_a_prompt(this_connection)
 				end
 
 			end
