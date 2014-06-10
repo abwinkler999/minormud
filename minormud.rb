@@ -2,12 +2,21 @@ require 'socket'
 require 'term/ansicolor'
 require 'pry'
 
+# a Player has an associated Character, and a socket through which he is connecting
 class Player
 	attr_accessor :character, :socket
+
+	def initialize(incoming_socket)
+		@socket = incoming_socket
+	end
 
 	def create_character(name)
 		@character = Character.new
 		@character.name = name
+	end
+
+	def readin
+		return @socket.gets.chomp
 	end
 end
 
@@ -15,6 +24,7 @@ class Character
 	attr_accessor :name
 end
 
+# there is only one Mud.  @all_players should be a class variable.
 class Mud
   def initialize
     @all_players = Array.new
@@ -51,7 +61,7 @@ class Mud
   end
 
   def parse(this_player)
-  	line = this_player.socket.readline.chomp!
+  	line = this_player.readin
 	if line.length == 0
 		this_player.socket.puts "Pardon?"
 		bust_a_prompt(this_player)
@@ -80,11 +90,9 @@ class Mud
     while (conn = server.accept)
 	    Thread.new(conn) do |c|
 			puts "New connection detected."
-			this_player = Player.new
-			c.print "What is your name? "
-			foo = c.gets.chomp!
-			this_player.create_character(foo)
-			this_player.socket = c
+			this_player = Player.new(c)
+			this_player.socket.print "What is your name? "
+			this_player.create_character(this_player.readin)
 			this_player.socket.puts "Welcome, #{this_player.character.name}!"
 			sys_message("#{this_player.character.name} has connected.")
 			bust_a_prompt(this_player)
