@@ -1,5 +1,6 @@
 require 'socket'
 require 'term/ansicolor'
+require 'colorize'
 require 'pry'
 
 # a Player has an associated Character, and a socket through which he is connecting
@@ -34,8 +35,10 @@ class Mud
   end
 
   def send(message, recipient)
-  	communique = @color.bold, @color.green, message, @color.clear
-  	recipient.socket.puts communique.join
+  #	communique = @color.bold, @color.green, message, @color.clear
+	communique = message.green
+  #	recipient.socket.puts communique.join
+	recipient.socket.puts communique
   end
 
   def broadcast(message, originator = nil)
